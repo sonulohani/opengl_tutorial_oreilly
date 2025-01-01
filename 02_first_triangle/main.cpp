@@ -13,18 +13,21 @@ GLFWwindow *gWindow = nullptr;
 const GLchar *vertexShaderSource =
     "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 1) in vec3 aColor;\n"
+    "out vec3 vertColor;\n"
     "void main()\n"
     "{\n"
+    "   vertColor = aColor;\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
     "}\0";
 
-const GLchar *fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n\0";
+const GLchar *fragmentShaderSource = "#version 330 core\n"
+                                     "in vec3 vertColor;\n"
+                                     "out vec4 FragColor;\n"
+                                     "void main()\n"
+                                     "{\n"
+                                     "   FragColor = vec4(vertColor, 1.0);\n"
+                                     "}\n\0";
 
 bool initOpengl() {
   if (!glfwInit()) {
@@ -102,23 +105,43 @@ int main(int argc, char *argv[]) {
 
   // clang-format off
   GLfloat vertices[] = {
-    0.0f, 0.5f, 0.0f, // Top 
-    -0.5f, -0.5f, 0.0f, // Right
-    0.5f, -0.5f, 0.0f}; // Left
+    // positions
+    0.0f, 0.5f, 0.0f, // Top
+    -0.5f, -0.5f, 0.0f,// Right
+    0.5f, -0.5f, 0.0f }; // Left
+  
+  GLfloat vert_color[] = {
+    1.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 1.0f };
+
   // clang-format on
 
-  GLuint vbo;
+  GLuint vbo, vb02;
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glGenBuffers(1, &vb02);
+  glBindBuffer(GL_ARRAY_BUFFER, vb02);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vert_color), vert_color, GL_STATIC_DRAW);
 
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
 
+  // Position attribute
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
                         (GLvoid *)0);
+
   glEnableVertexAttribArray(0);
+
+  // COlor attribute
+  glBindBuffer(GL_ARRAY_BUFFER, vb02);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
+                        (GLvoid *)0);
+  glEnableVertexAttribArray(1);
 
   // create the shader
   GLuint vertexShader;
