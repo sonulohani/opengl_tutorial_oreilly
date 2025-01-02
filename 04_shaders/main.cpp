@@ -143,6 +143,15 @@ int main(int argc, char *argv[]) {
 
     shaderProgram.use();
 
+    GLfloat time = glfwGetTime();
+    GLfloat greenValue = (sin(time) / 2.0f) + 0.5f;
+    glm::vec2 pos;
+    pos.x = (sin(time) / 2.0f) + 0.5f;
+    pos.y = (sin(time) / 2.0f) + 0.5f;
+    shaderProgram.setUniform("posOffset", pos);
+    shaderProgram.setUniform("vertColor",
+                             glm::vec4(1.0f, greenValue, 0.31f, 1.0f));
+
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

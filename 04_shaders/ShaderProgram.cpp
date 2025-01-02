@@ -79,3 +79,24 @@ void ShaderProgram::compileCompileError(GLuint shader, ShaderType type) {
     }
   }
 }
+
+GLint ShaderProgram::getUniformLocation(const char *name) {
+  if (mUniformLocations.find(name) == mUniformLocations.end()) {
+    mUniformLocations[name] = glGetUniformLocation(mHandle, name);
+  }
+  return mUniformLocations[name];
+}
+
+void ShaderProgram::setUniform(const char *name, const glm::vec2 &value) {
+  GLint location = getUniformLocation(name);
+  glUniform2f(location, value.x, value.y);
+}
+
+void ShaderProgram::setUniform(const char *name, const glm::vec3 &value) {
+  GLint location = getUniformLocation(name);
+  glUniform3f(location, value.x, value.y, value.z);
+}
+void ShaderProgram::setUniform(const char *name, const glm::vec4 &value) {
+  GLint location = getUniformLocation(name);
+  glUniform4f(location, value.x, value.y, value.z, value.w);
+}

@@ -17,11 +17,14 @@ find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLFW REQUIRED glfw3)
 
+# Find GLM
+pkg_check_modules(GLM REQUIRED glm)
+
 # Find GLEW
 find_package(GLEW REQUIRED)
 
 # Include directories
-include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS})
+include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
 
 file(COPY shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR}) 
 
