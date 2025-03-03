@@ -16,15 +16,20 @@ GLFWwindow *gWindow = nullptr;
 bool gWireFrame = false;
 const std::string texture1FileName = "wooden_crate.jpg";
 const std::string texture2FileName = "floor.jpg";
-const float MOUSE_SENSITIVITY = 0.25f;
 
-OrbitCamera orbitCamera;
+FPSCamera fpsCamera{glm::vec3(0.0f, 0.0f, 5.0f)};
+const double ZOOM_SENSITIVITY = -3.0;
+const float MOVE_SPEED = 5.0;
+const float MOUSE_SENSITIVITY = 0.1f;
+
 float gYaw = 0.f;
 float gPitch = 0.f;
 float gRadius = 10.0f;
 
 void glfw_OnFramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void glfw_onMouseMove(GLFWwindow *window, double posX, double posY);
+void glfw_onMouseScroll(GLFWwindow *window, double deltaX, double deltaY);
+void update(double elapsedTime);
 
 bool initOpengl()
 {
@@ -62,22 +67,29 @@ bool initOpengl()
   glfwMakeContextCurrent(gWindow);
   glfwSetFramebufferSizeCallback(gWindow, glfw_OnFramebufferSizeCallback);
   glfwSetCursorPosCallback(gWindow, glfw_onMouseMove);
+  glfwSetScrollCallback(gWindow, glfw_onMouseScroll);
+
+  // Hides and grabs the mouse cursor
+  glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwSetCursorPos(gWindow, gWindowWidth / 2, gWindowHeight / 2);
 
   glfwSetKeyCallback(gWindow, [](GLFWwindow *window, int key, int scancode,
                                  int action, int mods)
                      {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-      glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
+                       if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+                       {
+                         glfwSetWindowShouldClose(window, GLFW_TRUE);
+                       }
 
-    if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-      gWireFrame = !gWireFrame;
-      if (gWireFrame) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      } else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-      }
-    } });
+                       // if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+                       //   gWireFrame = !gWireFrame;
+                       //   if (gWireFrame) {
+                       //     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                       //   } else {
+                       //     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                       //   }
+                       // }
+                     });
 
   glewExperimental = GL_TRUE;
   if (glewInit() != GLEW_OK)
@@ -104,23 +116,65 @@ void glfw_OnFramebufferSizeCallback(GLFWwindow *window, int width, int height)
 
 void glfw_onMouseMove(GLFWwindow *window, double posX, double posY)
 {
-  static glm::vec2 lastMousePos = glm::vec2(0.0f, 0.0f);
+  // static glm::vec2 lastMousePos = glm::vec2(0.0f, 0.0f);
 
-  if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+  // if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+  // {
+  //   gYaw -= (float)(posX - lastMousePos.x) * MOUSE_SENSITIVITY;
+  //   gPitch += (float)(posY - lastMousePos.y) * MOUSE_SENSITIVITY;
+  // }
+
+  // if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+  // {
+  //   float dx = 0.01f * (float)(posX - lastMousePos.x);
+  //   float dy = 0.01f * (float)(posY - lastMousePos.y);
+  //   gRadius += dx - dy;
+  // }
+
+  // lastMousePos.x = posX;
+  // lastMousePos.y = posY;
+}
+
+void glfw_onMouseScroll(GLFWwindow *window, double deltaX, double deltaY)
+{
+  double fov = fpsCamera.getFOV() + deltaY * ZOOM_SENSITIVITY;
+  fov = glm::clamp(fov, 1.0, 120.0);
+  fpsCamera.setFOV(fov);
+}
+
+void update(double elapsedTime)
+{
+  double mouseX, mouseY;
+  glfwGetCursorPos(gWindow, &mouseX, &mouseY);
+  fpsCamera.rotate((float)(gWindowWidth / 2 - mouseX) * MOUSE_SENSITIVITY, (float)(gWindowHeight / 2 - mouseY) * MOUSE_SENSITIVITY);
+  glfwSetCursorPos(gWindow, gWindowWidth / 2, gWindowHeight / 2);
+
+  if (glfwGetKey(gWindow, GLFW_KEY_W) == GLFW_PRESS)
   {
-    gYaw -= (float)(posX - lastMousePos.x) * MOUSE_SENSITIVITY;
-    gPitch += (float)(posY - lastMousePos.y) * MOUSE_SENSITIVITY;
+    fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getLook());
+  }
+  else if (glfwGetKey(gWindow, GLFW_KEY_S) == GLFW_PRESS)
+  {
+    fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getLook());
   }
 
-  if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+  if (glfwGetKey(gWindow, GLFW_KEY_A) == GLFW_PRESS)
   {
-    float dx = 0.01f * (float)(posX - lastMousePos.x);
-    float dy = 0.01f * (float)(posY - lastMousePos.y);
-    gRadius += dx - dy;
+    fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getRight());
+  }
+  else if (glfwGetKey(gWindow, GLFW_KEY_D) == GLFW_PRESS)
+  {
+    fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getRight());
   }
 
-  lastMousePos.x = posX;
-  lastMousePos.y = posY;
+  if (glfwGetKey(gWindow, GLFW_KEY_Z) == GLFW_PRESS)
+  {
+    fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getUp());
+  }
+  else if (glfwGetKey(gWindow, GLFW_KEY_X) == GLFW_PRESS)
+  {
+    fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getUp());
+  }
 }
 
 void showFPS(GLFWwindow *window)
@@ -203,6 +257,8 @@ int main(int argc, char *argv[])
   // clang-format on
 
   glm::vec3 cubePos = glm::vec3(0.f, 0.f, -5.0f);
+  glm::vec3 floorPos;
+  floorPos.y = -1.f;
 
   GLuint vbo;
   glGenBuffers(1, &vbo);
@@ -246,6 +302,8 @@ int main(int argc, char *argv[])
     lastTime = currentTime;
 
     glfwPollEvents();
+    update(deltaTime);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     texture1.bindTexture(0);
@@ -257,16 +315,13 @@ int main(int argc, char *argv[])
     }
 
     glm::mat4 model, view, projection;
-    orbitCamera.setLookAt(cubePos);
-    orbitCamera.rotate(gYaw, gPitch);
-    orbitCamera.setRadius(gRadius);
 
     model = glm::mat4(1.0f);
     model = glm::translate(model, cubePos);
 
-    view = orbitCamera.getViewMatrix();
+    view = fpsCamera.getViewMatrix();
 
-    projection = glm::perspective(glm::radians(45.f), gWindowWidth / (float)gWindowHeight, 0.1f, 100.f);
+    projection = glm::perspective(glm::radians(fpsCamera.getFOV()), gWindowWidth / (float)gWindowHeight, 0.1f, 100.f);
 
     shaderProgram.use();
 
@@ -278,8 +333,6 @@ int main(int argc, char *argv[])
     glDrawArrays(GL_TRIANGLES, 0, 36);
     texture2.bindTexture(0);
 
-    glm::vec3 floorPos;
-    floorPos.y = -1.f;
     model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.f, 0.01f, 10.f));
 
     shaderProgram.setUniform("model", model);
