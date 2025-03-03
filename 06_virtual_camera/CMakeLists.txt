@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the source files
-add_executable(06_virtual_camera main.cpp ShaderProgram.cpp Texture2D.cpp)
+add_executable(06_virtual_camera main.cpp ShaderProgram.cpp Texture2D.cpp Camera.cpp)
 
 # Find OpenGL
 find_package(OpenGL REQUIRED)
@@ -26,8 +26,8 @@ find_package(GLEW REQUIRED)
 # Include directories
 include_directories(${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLFW_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
 
-file(COPY airplane.jpg DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY crate.jpg DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY wooden_crate.jpg DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY floor.jpg DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR}) 
 
 # Link libraries

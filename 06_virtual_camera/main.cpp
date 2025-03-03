@@ -6,6 +6,7 @@
 #include "GLFW/glfw3.h"
 #include "Texture2D.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "Camera.h"
 
 const char *APP_TITLE = "Introduction to modern opengl - hello window";
 int gWindowWidth = 1024;
@@ -13,13 +14,22 @@ int gWindowHeight = 768;
 bool gFullScreen = false;
 GLFWwindow *gWindow = nullptr;
 bool gWireFrame = false;
-const std::string texture1FileName = "airplane.jpg";
-// const std::string texture2FileName = "crate.jpg";
+const std::string texture1FileName = "wooden_crate.jpg";
+const std::string texture2FileName = "floor.jpg";
+const float MOUSE_SENSITIVITY = 0.25f;
+
+OrbitCamera orbitCamera;
+float gYaw = 0.f;
+float gPitch = 0.f;
+float gRadius = 10.0f;
 
 void glfw_OnFramebufferSizeCallback(GLFWwindow *window, int width, int height);
+void glfw_onMouseMove(GLFWwindow *window, double posX, double posY);
 
-bool initOpengl() {
-  if (!glfwInit()) {
+bool initOpengl()
+{
+  if (!glfwInit())
+  {
     std::cerr << "GLFW Initialization failed" << std::endl;
     return false;
   }
@@ -29,16 +39,20 @@ bool initOpengl() {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-  if (gFullScreen) {
+  if (gFullScreen)
+  {
     GLFWmonitor *pMonitor = glfwGetPrimaryMonitor();
     const GLFWvidmode *pVideoMode = glfwGetVideoMode(pMonitor);
     gWindow = glfwCreateWindow(pVideoMode->width, pVideoMode->height, APP_TITLE,
                                pMonitor, nullptr);
-  } else {
+  }
+  else
+  {
 
     gWindow = glfwCreateWindow(gWindowWidth, gWindowHeight, APP_TITLE, nullptr,
                                nullptr);
-    if (gWindow == nullptr) {
+    if (gWindow == nullptr)
+    {
       std::cerr << "Failed to create GLFW window" << std::endl;
       glfwTerminate();
       return false;
@@ -47,9 +61,11 @@ bool initOpengl() {
 
   glfwMakeContextCurrent(gWindow);
   glfwSetFramebufferSizeCallback(gWindow, glfw_OnFramebufferSizeCallback);
+  glfwSetCursorPosCallback(gWindow, glfw_onMouseMove);
 
   glfwSetKeyCallback(gWindow, [](GLFWwindow *window, int key, int scancode,
-                                 int action, int mods) {
+                                 int action, int mods)
+                     {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
       glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
@@ -61,11 +77,11 @@ bool initOpengl() {
       } else {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
       }
-    }
-  });
+    } });
 
   glewExperimental = GL_TRUE;
-  if (glewInit() != GLEW_OK) {
+  if (glewInit() != GLEW_OK)
+  {
     std::cerr << "GLEW Initialization failed" << std::endl;
     return false;
   }
@@ -78,21 +94,45 @@ bool initOpengl() {
   return true;
 }
 
-void glfw_OnFramebufferSizeCallback(GLFWwindow *window, int width, int height) {
+void glfw_OnFramebufferSizeCallback(GLFWwindow *window, int width, int height)
+{
   gWindowWidth = width;
   gWindowHeight = height;
 
   glViewport(0, 0, width, height);
 }
 
-void showFPS(GLFWwindow *window) {
+void glfw_onMouseMove(GLFWwindow *window, double posX, double posY)
+{
+  static glm::vec2 lastMousePos = glm::vec2(0.0f, 0.0f);
+
+  if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+  {
+    gYaw -= (float)(posX - lastMousePos.x) * MOUSE_SENSITIVITY;
+    gPitch += (float)(posY - lastMousePos.y) * MOUSE_SENSITIVITY;
+  }
+
+  if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+  {
+    float dx = 0.01f * (float)(posX - lastMousePos.x);
+    float dy = 0.01f * (float)(posY - lastMousePos.y);
+    gRadius += dx - dy;
+  }
+
+  lastMousePos.x = posX;
+  lastMousePos.y = posY;
+}
+
+void showFPS(GLFWwindow *window)
+{
   static double previousSeconds = 0.0;
   static int frameCount = 0;
   double currentSeconds;
   double elapsedSeconds;
   currentSeconds = glfwGetTime();
   elapsedSeconds = currentSeconds - previousSeconds;
-  if (elapsedSeconds > 0.25) {
+  if (elapsedSeconds > 0.25)
+  {
     previousSeconds = currentSeconds;
     double fps = (double)frameCount / elapsedSeconds;
 
@@ -106,8 +146,10 @@ void showFPS(GLFWwindow *window) {
   frameCount++;
 }
 
-int main(int argc, char *argv[]) {
-  if (!initOpengl()) {
+int main(int argc, char *argv[])
+{
+  if (!initOpengl())
+  {
     std::cerr << "GLFW Initialization failed" << std::endl;
     return -1;
   }
@@ -182,7 +224,6 @@ int main(int argc, char *argv[]) {
                         (GLvoid *)(3 * sizeof(GLfloat)));
   glEnableVertexAttribArray(1);
 
-
   ShaderProgram shaderProgram;
   shaderProgram.loadShader("shaders/vertexShader.glsl",
                            "shaders/fragmentShader.glsl");
@@ -190,13 +231,14 @@ int main(int argc, char *argv[]) {
   Texture2D texture1;
   texture1.loadTexture(texture1FileName, true);
 
-  // Texture2D texture2;
-  // texture2.loadTexture(texture2FileName, true);
+  Texture2D texture2;
+  texture2.loadTexture(texture2FileName, true);
 
   float cubeAngle = 0.f;
   double lastTime = glfwGetTime();
 
-  while (!glfwWindowShouldClose(gWindow)) {
+  while (!glfwWindowShouldClose(gWindow))
+  {
     showFPS(gWindow);
 
     double currentTime = glfwGetTime();
@@ -207,27 +249,24 @@ int main(int argc, char *argv[]) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     texture1.bindTexture(0);
-    // texture2.bindTexture(1);
-
-    glUniform1i(glGetUniformLocation(shaderProgram.getProgramHandle(), "myTexture1"), 0);
 
     cubeAngle += deltaTime * 50.f;
-    if(cubeAngle > 360.f) {
+    if (cubeAngle > 360.f)
+    {
       cubeAngle = 0.f;
     }
 
     glm::mat4 model, view, projection;
+    orbitCamera.setLookAt(cubePos);
+    orbitCamera.rotate(gYaw, gPitch);
+    orbitCamera.setRadius(gRadius);
 
     model = glm::mat4(1.0f);
     model = glm::translate(model, cubePos);
-    model = glm::rotate(model, glm::radians(cubeAngle), glm::vec3(0.f, 1.f, 0.f));
-    glm::vec3 camPos(0.f, 0.f, 0.f);
-    glm::vec3 targetPos(0.f, 0.f, -1.f);
-    glm::vec3 up(0.f, 1.f, 0.f);
-    view = glm::lookAt(camPos, targetPos, up);
 
-    projection = glm::perspective(glm::radians(45.f), gWindowWidth /
-    (float)gWindowHeight, 0.1f, 100.f);
+    view = orbitCamera.getViewMatrix();
+
+    projection = glm::perspective(glm::radians(45.f), gWindowWidth / (float)gWindowHeight, 0.1f, 100.f);
 
     shaderProgram.use();
 
@@ -237,6 +276,15 @@ int main(int argc, char *argv[]) {
 
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+    texture2.bindTexture(0);
+
+    glm::vec3 floorPos;
+    floorPos.y = -1.f;
+    model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.f, 0.01f, 10.f));
+
+    shaderProgram.setUniform("model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+
     glBindVertexArray(0);
 
     glfwSwapBuffers(gWindow);
